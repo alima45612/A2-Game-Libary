@@ -27,14 +27,4 @@ public class User {
     public void addGame(Game game) {
         ownedGames.add(game);
     }
-
-    public void removeGame(Game game) {
-        ownedGames.remove(game);
-    }
-
-    @Override
-    public String toString() {
-        return name + " (Preferred Platform: " + preferredPlatform + ")";
-    }
 }
-
