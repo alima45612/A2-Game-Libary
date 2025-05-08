@@ -1,9 +1,9 @@
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -15,7 +15,7 @@ public class GamesLibrary {
     private static User currentUser = null;
 
     public static void run() {
-        loadUsers();  // Load users' data from the file on startup
+        loadUsers();
 
         boolean running = true;
 
@@ -30,21 +30,20 @@ public class GamesLibrary {
                 if (choice.equals("1")) {
                     login();
                 } else if (choice.equals("2")) {
-                    saveUsers();  // Save users' data when exiting
+                    saveUsers();
                     running = false;
                     System.out.println("Goodbye!");
                 } else {
                     System.out.println("Invalid option. Try again.");
                 }
             } else {
-                // Menu for the logged-in user
                 System.out.println("\n=== " + currentUser.getName() + "'s Library ===");
                 System.out.println("1. View Preferred Platform");
                 System.out.println("2. View Owned Games");
                 System.out.println("3. Add Game");
                 System.out.println("4. Delete Game");
-                System.out.println("5. Logout");
-                System.out.println("6. View Games by Type");
+                System.out.println("5. Update Game Progress");
+                System.out.println("6. Logout");
                 System.out.print("Choose an option: ");
 
                 String choice = scanner.nextLine();
@@ -63,10 +62,10 @@ public class GamesLibrary {
                         deleteGame();
                         break;
                     case "5":
-                        currentUser = null;
+                        updateGameProgress();
                         break;
                     case "6":
-                        viewGamesByType();
+                        currentUser = null;
                         break;
                     default:
                         System.out.println("Invalid option. Try again.");
@@ -76,24 +75,23 @@ public class GamesLibrary {
     }
 
     private static void login() {
-        System.out.print("Enter username: ");
-        String username = scanner.nextLine();
+        System.out.print("Enter your name: ");
+        String name = scanner.nextLine();
 
-        // Check if user exists
         for (User user : users) {
-            if (user.getName().equals(username)) {
+            if (user.getName().equalsIgnoreCase(name)) {
                 currentUser = user;
-                System.out.println("Welcome back, " + username + "!");
+                System.out.println("Welcome back, " + name + "!");
                 return;
             }
         }
 
-        // If the user doesn't exist, create a new user
-        System.out.print("Enter preferred platform: ");
+        System.out.print("New user! Enter your preferred platform: ");
         String platform = scanner.nextLine();
-        currentUser = new User(username, platform);
+        currentUser = new User(name, platform);
         users.add(currentUser);
-        System.out.println("New user created! Welcome, " + username + "!");
+        saveUsers();
+        System.out.println("User created!");
     }
 
     private static void viewPreferredPlatform() {
@@ -102,11 +100,10 @@ public class GamesLibrary {
 
     private static void viewOwnedGames() {
         if (currentUser.getOwnedGames().isEmpty()) {
-            System.out.println("You haven't added any games yet.");
+            System.out.println("No games found.");
         } else {
-            System.out.println("\nYour Owned Games:");
-            for (Game game : currentUser.getOwnedGames()) {
-                System.out.println(game);
+            for (int i = 0; i < currentUser.getOwnedGames().size(); i++) {
+                System.out.println((i + 1) + ". " + currentUser.getOwnedGames().get(i));
             }
         }
     }
@@ -115,27 +112,48 @@ public class GamesLibrary {
         System.out.print("Enter game title: ");
         String title = scanner.nextLine();
 
-        System.out.print("Enter platform: ");
+        System.out.print("Enter game platform: ");
         String platform = scanner.nextLine();
 
-        System.out.print("Enter status (e.g., Completed, Playing, Wishlist): ");
+        System.out.print("Enter game status (e.g., Completed, In Progress): ");
         String status = scanner.nextLine();
 
-        System.out.print("Enter game type (Singleplayer, Multiplayer, Online): ");
-        String gameType = scanner.nextLine();
+        System.out.print("Enter game type (Singleplayer / Multiplayer / Online): ");
+        String gameType = scanner.nextLine().toLowerCase();
 
-        // Validate the game type
-        if (!gameType.equalsIgnoreCase("Singleplayer") &&
-            !gameType.equalsIgnoreCase("Multiplayer") &&
-            !gameType.equalsIgnoreCase("Online")) {
-            System.out.println("Invalid game type! Please enter Singleplayer, Multiplayer, or Online.");
-            return;
+        Game newGame = null;
+
+        switch (gameType) {
+            case "singleplayer":
+                System.out.print("Enter levels completed: ");
+                int levels = Integer.parseInt(scanner.nextLine());
+                newGame = new SingleplayerGame(title, platform, status, levels);
+                break;
+
+            case "multiplayer":
+                System.out.print("Enter number of wins: ");
+                int wins = Integer.parseInt(scanner.nextLine());
+                System.out.print("Enter number of losses: ");
+                int losses = Integer.parseInt(scanner.nextLine());
+                newGame = new MultiplayerGame(title, platform, status, wins, losses);
+                break;
+
+            case "online":
+                System.out.print("Enter time played (in minutes): ");
+                int timePlayed = Integer.parseInt(scanner.nextLine());
+                System.out.print("Enter achievements unlocked: ");
+                int achievements = Integer.parseInt(scanner.nextLine());
+                newGame = new OnlineGame(title, platform, status, timePlayed, achievements);
+                break;
+
+            default:
+                System.out.println("Invalid game type.");
+                return;
         }
 
-        Game newGame = new Game(title, platform, status, gameType);
         currentUser.addGame(newGame);
         System.out.println("Game added!");
-        saveUsers();  // Save users' data after adding a game
+        saveUsers();
     }
 
     private static void deleteGame() {
@@ -143,116 +161,112 @@ public class GamesLibrary {
         if (currentUser.getOwnedGames().isEmpty()) return;
 
         System.out.print("Enter the number of the game to delete: ");
-        int index;
-        try {
-            index = Integer.parseInt(scanner.nextLine()) - 1;
-            if (index >= 0 && index < currentUser.getOwnedGames().size()) {
-                currentUser.removeGame(currentUser.getOwnedGames().get(index));
-                System.out.println("Game deleted.");
-                saveUsers();  // Save users' data after deleting a game
-            } else {
-                System.out.println("Invalid number.");
-            }
-        } catch (NumberFormatException e) {
-            System.out.println("Invalid input.");
+        int index = Integer.parseInt(scanner.nextLine()) - 1;
+
+        if (index >= 0 && index < currentUser.getOwnedGames().size()) {
+            Game removed = currentUser.getOwnedGames().remove(index);
+            System.out.println("Removed: " + removed.getTitle());
+            saveUsers();
+        } else {
+            System.out.println("Invalid number.");
         }
     }
 
-    private static void viewGamesByType() {
-        System.out.println("\nSelect game type to view:");
-        System.out.println("1. Singleplayer");
-        System.out.println("2. Multiplayer");
-        System.out.println("3. Online");
-        System.out.print("Choose an option: ");
-
-        String choice = scanner.nextLine();
-
-        List<Game> filteredGames = new ArrayList<>();
-        switch (choice) {
-            case "1":
-                for (Game game : currentUser.getOwnedGames()) {
-                    if (game.getGameType().equalsIgnoreCase("Singleplayer")) {
-                        filteredGames.add(game);
-                    }
-                }
-                break;
-            case "2":
-                for (Game game : currentUser.getOwnedGames()) {
-                    if (game.getGameType().equalsIgnoreCase("Multiplayer")) {
-                        filteredGames.add(game);
-                    }
-                }
-                break;
-            case "3":
-                for (Game game : currentUser.getOwnedGames()) {
-                    if (game.getGameType().equalsIgnoreCase("Online")) {
-                        filteredGames.add(game);
-                    }
-                }
-                break;
-            default:
-                System.out.println("Invalid option.");
-                return;
+    private static void updateGameProgress() {
+        if (currentUser.getOwnedGames().isEmpty()) {
+            System.out.println("You don't have any games yet.");
+            return;
         }
 
-        if (filteredGames.isEmpty()) {
-            System.out.println("No games found for the selected type.");
+        System.out.println("\nSelect a game to update progress:");
+        for (int i = 0; i < currentUser.getOwnedGames().size(); i++) {
+            System.out.println((i + 1) + ". " + currentUser.getOwnedGames().get(i));
+        }
+
+        System.out.print("Enter the number of the game to update progress: ");
+        int index = Integer.parseInt(scanner.nextLine()) - 1;
+
+        if (index >= 0 && index < currentUser.getOwnedGames().size()) {
+            Game game = currentUser.getOwnedGames().get(index);
+            game.updateProgress();
+            saveUsers();
         } else {
-            System.out.println("\nFiltered Games:");
-            for (Game game : filteredGames) {
-                System.out.println(game);
+            System.out.println("Invalid number.");
+        }
+    }
+
+    private static void saveUsers() {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(FILE_NAME))) {
+            for (User user : users) {
+                writer.println("USER:" + user.getName() + "," + user.getPreferredPlatform());
+                for (Game game : user.getOwnedGames()) {
+                    StringBuilder line = new StringBuilder("GAME:");
+                    line.append(game.getGameType()).append(",")
+                        .append(game.getTitle()).append(",")
+                        .append(game.getPlatform()).append(",")
+                        .append(game.getStatus());
+
+                    if (game instanceof SingleplayerGame sp) {
+                        line.append(",").append(sp.getLevelsCompleted());
+                    } else if (game instanceof MultiplayerGame mp) {
+                        line.append(",").append(mp.getWins()).append(",").append(mp.getLosses());
+                    } else if (game instanceof OnlineGame og) {
+                        line.append(",").append(og.getTimePlayed()).append(",").append(og.getAchievementsUnlocked());
+                    }
+
+                    writer.println(line);
+                }
             }
+        } catch (IOException e) {
+            System.out.println("Error saving users: " + e.getMessage());
         }
     }
 
     private static void loadUsers() {
         try (BufferedReader reader = new BufferedReader(new FileReader(FILE_NAME))) {
             String line;
-            while ((line = reader.readLine()) != null) {
-                String[] userParts = line.split("\\|");
-                if (userParts.length == 2) {
-                    String username = userParts[0].trim();
-                    String preferredPlatform = userParts[1].trim();
-                    User user = new User(username, preferredPlatform);
-                    users.add(user);
-                }
+            User current = null;
 
-                // Read and assign owned games for each user
-                line = reader.readLine();
-                if (line != null) {
-                    String[] gameParts = line.split("\\|");
-                    for (String gameData : gameParts) {
-                        String[] gameDetails = gameData.split(",");
-                        if (gameDetails.length == 4) {
-                            String title = gameDetails[0].trim();
-                            String platform = gameDetails[1].trim();
-                            String status = gameDetails[2].trim();
-                            String gameType = gameDetails[3].trim();
-                            Game game = new Game(title, platform, status, gameType);
-                            users.get(users.size() - 1).addGame(game);
-                        }
+            while ((line = reader.readLine()) != null) {
+                if (line.startsWith("USER:")) {
+                    String[] parts = line.substring(5).split(",");
+                    current = new User(parts[0], parts[1]);
+                    users.add(current);
+                } else if (line.startsWith("GAME:") && current != null) {
+                    String[] parts = line.substring(5).split(",");
+                    String type = parts[0];
+                    String title = parts[1];
+                    String platform = parts[2];
+                    String status = parts[3];
+
+                    Game game = null;
+
+                    switch (type.toLowerCase()) {
+                        case "singleplayer":
+                            int levels = Integer.parseInt(parts[4]);
+                            game = new SingleplayerGame(title, platform, status, levels);
+                            break;
+                        case "multiplayer":
+                            int wins = Integer.parseInt(parts[4]);
+                            int losses = Integer.parseInt(parts[5]);
+                            game = new MultiplayerGame(title, platform, status, wins, losses);
+                            break;
+                        case "online":
+                            int timePlayed = Integer.parseInt(parts[4]);
+                            int achievements = Integer.parseInt(parts[5]);
+                            game = new OnlineGame(title, platform, status, timePlayed, achievements);
+                            break;
+                    }
+
+                    if (game != null) {
+                        current.addGame(game);
                     }
                 }
             }
         } catch (FileNotFoundException e) {
-            System.out.println("No previous data found. Starting fresh.");
+            // It's okay if the file doesn't exist yet
         } catch (IOException e) {
-            System.out.println("Error loading users data: " + e.getMessage());
-        }
-    }
-
-    private static void saveUsers() {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_NAME))) {
-            for (User user : users) {
-                writer.write(user.getName() + " | " + user.getPreferredPlatform());
-                writer.newLine();
-                for (Game game : user.getOwnedGames()) {
-                    writer.write(game.getTitle() + "," + game.getPlatform() + "," + game.getStatus() + "," + game.getGameType() + "|");
-                }
-                writer.newLine();
-            }
-        } catch (IOException e) {
-            System.out.println("Error saving users data: " + e.getMessage());
+            System.out.println("Error loading users: " + e.getMessage());
         }
     }
 }
