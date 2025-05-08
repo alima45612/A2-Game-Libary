@@ -1,14 +1,12 @@
-public class Game {
+public abstract class Game {
     private String title;
     private String platform;
     private String status;
-    private String gameType;
 
-    public Game(String title, String platform, String status, String gameType) {
+    public Game(String title, String platform, String status) {
         this.title = title;
         this.platform = platform;
         this.status = status;
-        this.gameType = gameType;
     }
 
     public String getTitle() {
@@ -23,13 +21,13 @@ public class Game {
         return status;
     }
 
-    public String getGameType() {
-        return gameType;
-    }
+    public abstract String getGameType();
+
+    public abstract void updateProgress();
 
     @Override
     public String toString() {
-        return "Title: " + title + " | Platform: " + platform + " | Status: " + status + " | Type: " + gameType;
+        return title + " (" + platform + ") - " + status;
     }
 }
 
