@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-
 public class GamesLibrary {
     private static List<User> users = new ArrayList<>();
     private static Scanner scanner = new Scanner(System.in);
@@ -45,6 +44,7 @@ public class GamesLibrary {
                 System.out.println("3. Add Game");
                 System.out.println("4. Delete Game");
                 System.out.println("5. Logout");
+                System.out.println("6. View Games by Type");
                 System.out.print("Choose an option: ");
 
                 String choice = scanner.nextLine();
@@ -64,6 +64,9 @@ public class GamesLibrary {
                         break;
                     case "5":
                         currentUser = null;
+                        break;
+                    case "6":
+                        viewGamesByType();
                         break;
                     default:
                         System.out.println("Invalid option. Try again.");
@@ -118,7 +121,18 @@ public class GamesLibrary {
         System.out.print("Enter status (e.g., Completed, Playing, Wishlist): ");
         String status = scanner.nextLine();
 
-        Game newGame = new Game(title, platform, status);
+        System.out.print("Enter game type (Singleplayer, Multiplayer, Online): ");
+        String gameType = scanner.nextLine();
+
+        // Validate the game type
+        if (!gameType.equalsIgnoreCase("Singleplayer") &&
+            !gameType.equalsIgnoreCase("Multiplayer") &&
+            !gameType.equalsIgnoreCase("Online")) {
+            System.out.println("Invalid game type! Please enter Singleplayer, Multiplayer, or Online.");
+            return;
+        }
+
+        Game newGame = new Game(title, platform, status, gameType);
         currentUser.addGame(newGame);
         System.out.println("Game added!");
         saveUsers();  // Save users' data after adding a game
@@ -144,6 +158,53 @@ public class GamesLibrary {
         }
     }
 
+    private static void viewGamesByType() {
+        System.out.println("\nSelect game type to view:");
+        System.out.println("1. Singleplayer");
+        System.out.println("2. Multiplayer");
+        System.out.println("3. Online");
+        System.out.print("Choose an option: ");
+
+        String choice = scanner.nextLine();
+
+        List<Game> filteredGames = new ArrayList<>();
+        switch (choice) {
+            case "1":
+                for (Game game : currentUser.getOwnedGames()) {
+                    if (game.getGameType().equalsIgnoreCase("Singleplayer")) {
+                        filteredGames.add(game);
+                    }
+                }
+                break;
+            case "2":
+                for (Game game : currentUser.getOwnedGames()) {
+                    if (game.getGameType().equalsIgnoreCase("Multiplayer")) {
+                        filteredGames.add(game);
+                    }
+                }
+                break;
+            case "3":
+                for (Game game : currentUser.getOwnedGames()) {
+                    if (game.getGameType().equalsIgnoreCase("Online")) {
+                        filteredGames.add(game);
+                    }
+                }
+                break;
+            default:
+                System.out.println("Invalid option.");
+                return;
+        }
+
+        if (filteredGames.isEmpty()) {
+            System.out.println("No games found for the selected type.");
+        } else {
+            System.out.println("\nFiltered Games:");
+            for (Game game : filteredGames) {
+                System.out.println(game);
+            }
+        }
+    }
+
     private static void loadUsers() {
         try (BufferedReader reader = new BufferedReader(new FileReader(FILE_NAME))) {
             String line;
@@ -162,11 +223,12 @@ public class GamesLibrary {
                     String[] gameParts = line.split("\\|");
                     for (String gameData : gameParts) {
                         String[] gameDetails = gameData.split(",");
-                        if (gameDetails.length == 3) {
+                        if (gameDetails.length == 4) {
                             String title = gameDetails[0].trim();
                             String platform = gameDetails[1].trim();
                             String status = gameDetails[2].trim();
-                            Game game = new Game(title, platform, status);
+                            String gameType = gameDetails[3].trim();
+                            Game game = new Game(title, platform, status, gameType);
                             users.get(users.size() - 1).addGame(game);
                         }
                     }
@@ -185,7 +247,7 @@ public class GamesLibrary {
                 writer.write(user.getName() + " | " + user.getPreferredPlatform());
                 writer.newLine();
                 for (Game game : user.getOwnedGames()) {
-                    writer.write(game.getTitle() + "," + game.getPlatform() + "," + game.getStatus() + "|");
+                    writer.write(game.getTitle() + "," + game.getPlatform() + "," + game.getStatus() + "," + game.getGameType() + "|");
                 }
                 writer.newLine();
             }
