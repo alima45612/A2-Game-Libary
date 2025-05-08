@@ -1,2 +1,2 @@
-alima | PC
-COD,PC,Playing,Singleplayer|Assasins Creed,Ps5,Playing,Online|Fortnite,Xbox,Wishlist,Multiplayer|
+USER:alima,PC
+GAME:Singleplayer,COD,PC,in progress,4
