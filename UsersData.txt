@@ -1,2 +1,6 @@
 USER:alima,PC
 GAME:Singleplayer,COD,PC,in progress,4
+USER:Bob,XBox
+GAME:Singleplayer,Assasins Creed,PC,In Progress,7
+GAME:Multiplayer,Call Of Duty,PlayStation,In Progress,14,6
+USER:Sam,PlayStation
